@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --panel:#ffffff; --panel2:#fbfcfe; --line:#e3e8ef; --text:#0f1722; --muted:#5b6b7b;
+    --accent:#2f7bff; --accent-soft:#e8f0ff; --green:#13a877; --green-soft:#e6f7f1;
+    --amber:#c98a12; --amber-soft:#fdf3e1; --danger:#e5484d; --danger-soft:#fdeceb;
+    --chip:#eef2f7; --radius:12px; --radius-sm:8px;
+    --shadow:0 1px 3px rgba(16,30,54,.06),0 8px 24px rgba(16,30,54,.05);
+  }
+  [data-theme="dark"]{
+    --bg:#0f141a; --panel:#161c24; --panel2:#131820; --line:#2a333f; --text:#e8eef5; --muted:#93a1b0;
+    --accent:#4c8dff; --accent-soft:#1b2a44; --green:#1fce9c; --green-soft:#123329;
+    --amber:#e0a83c; --amber-soft:#3a2e10; --danger:#ff6b6b; --danger-soft:#3a1a1a;
+    --chip:#1e2732; --shadow:0 1px 3px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--panel);border-bottom:1px solid var(--line)}
+  header h1{font-size:17px;margin:0;display:flex;align-items:center;gap:8px}
+  header h1 .dot{width:9px;height:9px;border-radius:50%;background:var(--accent)}
+  #themeBtn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:var(--radius-sm);padding:7px 10px;cursor:pointer;font-size:14px}
+  main.layout{display:grid;grid-template-columns:340px 1fr;gap:16px;padding:16px;max-width:1300px;margin:0 auto;align-items:start}
+  @media (max-width:860px){ main.layout{grid-template-columns:1fr} }
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .list-panel{padding:14px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 100px);overflow:auto}
+  .panel-head{display:flex;align-items:center;justify-content:space-between}
+  .panel-head h2{font-size:15px;margin:0}
+  button.primary{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer}
+  button.primary:hover{filter:brightness(1.08)}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--text);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;cursor:pointer}
+  button.ghost:hover{background:var(--chip)}
+  button.danger{background:var(--danger-soft);color:var(--danger);border:1px solid transparent;border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer}
+  button.small{padding:5px 9px;font-size:12px}
+
+  input[type=text],input[type=email],input[type=number],input[type=date],input[type=time],select,textarea{
+    width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;font-family:inherit
+  }
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+  textarea{resize:vertical;min-height:56px}
+
+  #searchRow{display:flex;gap:8px}
+  #searchRow input{flex:1}
+  #statusFilter{width:110px}
+
+  .contact-card{border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;cursor:pointer;background:var(--panel2);transition:.12s}
+  .contact-card:hover{border-color:var(--accent)}
+  .contact-card.active{border-color:var(--accent);background:var(--accent-soft)}
+  .contact-card .row1{display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .contact-card .name{font-weight:600}
+  .contact-card .company{color:var(--muted);font-size:12px;margin-top:2px}
+  .empty-list{color:var(--muted);text-align:center;padding:24px 8px;font-size:13px}
+
+  .chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+  .chip.status-active{background:var(--green-soft);color:var(--green)}
+  .chip.status-inactive{background:var(--chip);color:var(--muted)}
+  .chip.priority-high{background:var(--danger-soft);color:var(--danger)}
+  .chip.priority-medium{background:var(--amber-soft);color:var(--amber)}
+  .chip.priority-low{background:var(--chip);color:var(--muted)}
+
+  .detail-panel{padding:20px;min-height:60vh}
+  #emptyState{display:flex;flex-direction:column;align-items:center;justify-content:center;height:50vh;color:var(--muted);gap:6px;text-align:center}
+  #emptyState .big{font-size:32px}
+
+  .form-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+  .form-head h2{margin:0 0 4px 0;font-size:19px}
+  .form-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+  @media (max-width:600px){ .field-grid{grid-template-columns:1fr} }
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field.full{grid-column:1/-1}
+  .field label{font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.02em}
+
+  fieldset{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px 16px;margin:22px 0 0}
+  legend{padding:0 6px;font-size:13px;font-weight:700;color:var(--muted)}
+
+  .activity-row{display:grid;grid-template-columns:100px 1fr 110px 80px auto;gap:10px;align-items:center;padding:9px 4px;border-bottom:1px solid var(--line);font-size:13px}
+  .activity-row:last-child{border-bottom:none}
+  .activity-row .a-notes{color:var(--muted);font-size:12px;grid-column:1/-1;margin-top:-4px}
+  @media (max-width:700px){ .activity-row{grid-template-columns:1fr 1fr;grid-template-areas:"date type" "name name" "time actions"} }
+  .act-empty{color:var(--muted);font-size:13px;padding:10px 4px}
+
+  .activity-form{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;padding:12px;background:var(--panel2);border:1px dashed var(--line);border-radius:var(--radius-sm)}
+  .activity-form .field.full{grid-column:1/-1}
+  @media (max-width:600px){ .activity-form{grid-template-columns:1fr} }
+
+  .hidden{display:none !important}
+
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);
+    padding:10px 18px;border-radius:999px;font-size:13px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;box-shadow:var(--shadow)}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="dot"></span>CRM</h1>
+  <button id="themeBtn" onclick="toggleTheme()">🌙</button>
+</header>
+
+<main class="layout">
+  <aside class="panel list-panel">
+    <div class="panel-head">
+      <h2>Contacts</h2>
+      <button class="primary small" onclick="newContact()">+ New</button>
+    </div>
+    <div id="searchRow">
+      <input type="text" id="searchInput" placeholder="Search by name or company…" oninput="renderContactList()">
+      <select id="statusFilter" onchange="renderContactList()">
+        <option value="">All</option>
+        <option value="Active">Active</option>
+        <option value="Inactive">Inactive</option>
+      </select>
+    </div>
+    <div id="contactList"></div>
+  </aside>
+
+  <section class="panel detail-panel">
+    <div id="emptyState">
+      <div class="big">👤</div>
+      <div>Select a contact on the left, or create a new one.</div>
+    </div>
+
+    <form id="contactForm" class="hidden" onsubmit="return false;">
+      <div class="form-head">
+        <div>
+          <h2 id="formTitle">New Contact</h2>
+          <span id="formSubtitle" style="color:var(--muted);font-size:12.5px"></span>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="danger hidden" id="deleteContactBtn" onclick="deleteContact()">Delete</button>
+          <button type="button" class="ghost" onclick="cancelContactEdit()">Cancel</button>
+          <button type="button" class="primary" onclick="saveContact()">Save Contact</button>
+        </div>
+      </div>
+
+      <div class="field-grid">
+        <div class="field"><label>Contact Name *</label><input type="text" id="f_name"></div>
+        <div class="field"><label>Status</label>
+          <select id="f_status"><option>Active</option><option>Inactive</option></select>
+        </div>
+        <div class="field"><label>Company</label><input type="text" id="f_company"></div>
+        <div class="field"><label>Job Title</label><input type="text" id="f_jobTitle"></div>
+        <div class="field"><label>Email</label><input type="email" id="f_email"></div>
+        <div class="field"><label>Phone</label><input type="text" id="f_phone"></div>
+        <div class="field"><label>Department</label><input type="text" id="f_department"></div>
+        <div class="field"><label>Priority</label>
+          <select id="f_priority"><option>Low</option><option>Medium</option><option>High</option></select>
+        </div>
+        <div class="field"><label>LinkedIn</label><input type="text" id="f_linkedin"></div>
+        <div class="field"><label>Website</label><input type="text" id="f_website"></div>
+        <div class="field"><label>Street</label><input type="text" id="f_street"></div>
+        <div class="field"><label>City</label><input type="text" id="f_city"></div>
+        <div class="field"><label>State</label><input type="text" id="f_state"></div>
+        <div class="field"><label>Zip</label><input type="text" id="f_zip"></div>
+        <div class="field"><label>Lead Source</label>
+          <select id="f_leadSource">
+            <option>Website</option><option>Referral</option><option>Social Media</option>
+            <option>Event</option><option>Cold Call</option><option>Conference</option><option>Email Campaign</option>
+          </select>
+        </div>
+        <div class="field"><label>Pipeline Stage</label>
+          <select id="f_pipelineStage">
+            <option>Prospecting</option><option>Qualification</option><option>Discovery</option>
+            <option>Proposal Sent</option><option>Negotiation</option><option>Closed Won</option><option>Closed Lost</option>
+          </select>
+        </div>
+        <div class="field"><label>Deal Value ($)</label><input type="number" id="f_dealValue" min="0" step="100"></div>
+        <div class="field"><label>Date Added</label><input type="date" id="f_dateAdded"></div>
+        <div class="field full"><label>Notes</label><textarea id="f_notes"></textarea></div>
+      </div>
+
+      <fieldset id="activitiesFieldset">
+        <legend>Activities</legend>
+        <div id="activityList"></div>
+        <button type="button" class="ghost small" style="margin-top:10px" onclick="showActivityForm()">+ Add Activity</button>
+
+        <div class="activity-form hidden" id="activityForm">
+          <input type="hidden" id="a_id">
+          <div class="field"><label>Activity Name *</label><input type="text" id="a_name"></div>
+          <div class="field"><label>Type</label><input type="text" id="a_type" list="typeOptions" placeholder="Meeting, Call…">
+            <datalist id="typeOptions">
+              <option>Meeting</option><option>Call</option><option>Email</option>
+              <option>Presentation</option><option>Writing</option><option>Demo</option><option>Follow-up</option>
+            </datalist>
+          </div>
+          <div class="field"><label>Date</label><input type="date" id="a_date"></div>
+          <div class="field"><label>Time</label><input type="time" id="a_time"></div>
+          <div class="field full"><label>Notes</label><textarea id="a_notes" style="min-height:40px"></textarea></div>
+          <div class="field full" style="flex-direction:row;gap:8px;justify-content:flex-end">
+            <button type="button" class="ghost small" onclick="hideActivityForm()">Cancel</button>
+            <button type="button" class="primary small" onclick="saveActivity()">Save Activity</button>
+          </div>
+        </div>
+      </fieldset>
+    </form>
+  </section>
+</main>
+
+<div id="toast"></div>
+
+<script>
+/* ---------- Theme ---------- */
+function applyTheme(t){
+  document.documentElement.dataset.theme = t;
+  document.getElementById('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('crm_theme', t);
+}
+function toggleTheme(){ applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); }
+applyTheme(localStorage.getItem('crm_theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+
+/* ---------- Seed data (from the original workbook, junk rows dropped) ---------- */
+const SEED_CONTACTS = [
+  {id:1,name:"Alice Johnson",status:"Active",company:"Tech Solutions Inc.",email:"alice.johnson@techsolutions.com",phone:"555-123-4567",jobTitle:"Senior Software Engineer",department:"Engineering",linkedin:"linkedin.com/in/alicejohnson",website:"www.techsolutions.com",priority:"High",street:"123 Main St",city:"Anytown",state:"CA",zip:"90210",leadSource:"Website",dealValue:50000,pipelineStage:"Prospecting",dateAdded:"2023-10-26",notes:"Interested in new cloud solutions."},
+  {id:2,name:"Bob Williams",status:"Inactive",company:"Global Enterprises",email:"bob.williams@globalenterprises.net",phone:"555-987-6543",jobTitle:"Marketing Manager",department:"Marketing",linkedin:"linkedin.com/in/bobjwilliams",website:"www.globalenterprises.net",priority:"Medium",street:"456 Oak Ave",city:"Otherville",state:"NY",zip:"10001",leadSource:"Referral",dealValue:75000,pipelineStage:"Qualification",dateAdded:"2023-10-25",notes:"Needs a demo by next week."},
+  {id:3,name:"Charlie Brown",status:"Active",company:"Creative Minds Agency",email:"charlie.b@creativeminds.org",phone:"555-555-1212",jobTitle:"Lead Designer",department:"Design",linkedin:"linkedin.com/in/charliebrowncreative",website:"www.creativeminds.org",priority:"High",street:"789 Pine Ln",city:"Artville",state:"TX",zip:"75001",leadSource:"Social Media",dealValue:30000,pipelineStage:"Proposal Sent",dateAdded:"2023-10-24",notes:"Looking for design software."},
+  {id:4,name:"Diana Davis",status:"Active",company:"Data Analytics Co.",email:"diana.davis@dataanalytics.io",phone:"555-111-2222",jobTitle:"Data Scientist",department:"Analytics",linkedin:"linkedin.com/in/dianadavisdata",website:"www.dataanalytics.io",priority:"Medium",street:"101 Maple Dr",city:"Statestown",state:"IL",zip:"60601",leadSource:"Event",dealValue:100000,pipelineStage:"Negotiation",dateAdded:"2023-10-23",notes:"High potential for large deal."},
+  {id:5,name:"Ethan Miller",status:"Inactive",company:"Innovative Systems",email:"ethan.m@innovativesystems.tech",phone:"555-333-4444",jobTitle:"Product Manager",department:"Product Development",linkedin:"linkedin.com/in/ethanmillerproduct",website:"www.innovativesystems.tech",priority:"Low",street:"222 Birch Rd",city:"Techburg",state:"WA",zip:"98101",leadSource:"Cold Call",dealValue:20000,pipelineStage:"Closed Lost",dateAdded:"2023-10-22",notes:"Budget constraints."},
+  {id:6,name:"Fiona Garcia",status:"Active",company:"Global Logistics",email:"fiona.garcia@globallogistics.com",phone:"555-666-7777",jobTitle:"Operations Director",department:"Operations",linkedin:"linkedin.com/in/fionagarcialogistics",website:"www.globallogistics.com",priority:"High",street:"333 Cedar Ct",city:"Portcity",state:"FL",zip:"33101",leadSource:"Website",dealValue:150000,pipelineStage:"Closed Won",dateAdded:"2023-10-21",notes:"Successful implementation of our services."},
+  {id:7,name:"George Rodriguez",status:"Active",company:"Finance Partners",email:"george.r@financepartners.biz",phone:"555-888-9999",jobTitle:"Financial Analyst",department:"Finance",linkedin:"linkedin.com/in/georgerodriguezfinance",website:"www.financepartners.biz",priority:"Medium",street:"444 Elm St",city:"Moneytown",state:"MA",zip:"02101",leadSource:"Referral",dealValue:60000,pipelineStage:"Prospecting",dateAdded:"2023-10-20",notes:"Exploring new investment opportunities."},
+  {id:8,name:"Hannah Lee",status:"Inactive",company:"Health Innovations",email:"hannah.lee@healthinnovations.care",phone:"555-000-1111",jobTitle:"Research Scientist",department:"R&D",linkedin:"linkedin.com/in/hannahleehealth",website:"www.healthinnovations.care",priority:"Low",street:"555 Walnut Way",city:"Medville",state:"PA",zip:"19101",leadSource:"Conference",dealValue:40000,pipelineStage:"Discovery",dateAdded:"2023-10-19",notes:"Needs more information on product capabilities."},
+  {id:9,name:"Ian Clark",status:"Active",company:"Education First",email:"ian.clark@educationfirst.edu",phone:"555-222-3333",jobTitle:"IT Director",department:"Information Technology",linkedin:"linkedin.com/in/ianclarkeducation",website:"www.educationfirst.edu",priority:"High",street:"666 Spruce St",city:"Campusville",state:"CA",zip:"94701",leadSource:"Email Campaign",dealValue:90000,pipelineStage:"Proposal Sent",dateAdded:"2023-10-18",notes:"Looking to upgrade school's network infrastructure."},
+  {id:10,name:"Jasmine Scott",status:"Active",company:"Retail Giants",email:"jasmine.scott@retailgiants.com",phone:"555-444-5555",jobTitle:"E-commerce Manager",department:"Sales",linkedin:"linkedin.com/in/jasminescottretail",website:"www.retailgiants.com",priority:"Medium",street:"777 Cherry Ln",city:"Shopcity",state:"OH",zip:"44101",leadSource:"Website",dealValue:120000,pipelineStage:"Qualification",dateAdded:"2023-10-17",notes:"Interested in integrating our platform."}
+];
+const SEED_ACTIVITIES = [
+  {id:1,contactId:1,name:"Project Kickoff",type:"Meeting",date:"2023-10-26",time:"09:00",notes:"Initial meeting to define project scope and goals."},
+  {id:3,contactId:3,name:"Client Demo",type:"Presentation",date:"2023-10-27",time:"14:00",notes:"Demonstration of the completed module to the client."},
+  {id:4,contactId:1,name:"Team Standup",type:"Meeting",date:"2023-10-27",time:"09:30",notes:"Daily sync-up to discuss progress and blockers."},
+  {id:6,contactId:3,name:"Documentation Update",type:"Writing",date:"2023-10-28",time:"13:00",notes:"Updating user guides and API documentation."},
+  {id:7,contactId:1,name:"Documentation Update",type:"Writing",date:"2023-10-28",time:"13:00",notes:"Updating user guides and API documentation."},
+  {id:9,contactId:3,name:"Retrospective",type:"Meeting",date:"2023-10-30",time:"16:00",notes:"Review of the past sprint to identify areas for improvement."}
+];
+
+/* ---------- State + persistence (localStorage) ---------- */
+const STORAGE_KEY = 'crm_data_v1';
+let state = loadState();
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ console.error('Load failed', e); }
+  return {
+    contacts: SEED_CONTACTS,
+    activities: SEED_ACTIVITIES,
+    nextContactId: 11,
+    nextActivityId: 13
+  };
+}
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){
+    console.error('Save failed', e);
+    showToast('⚠️ Could not save — storage may be full');
+  }
+}
+
+let selectedContactId = null;
+let editingActivityId = null; // null = not editing, 'new' = new activity, or an id
+
+/* ---------- Helpers ---------- */
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._h);
+  showToast._h = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+function fmtMoney(v){
+  const n = Number(v)||0;
+  return '$' + n.toLocaleString();
+}
+function statusChip(s){
+  const cls = s === 'Active' ? 'status-active' : 'status-inactive';
+  return `<span class="chip ${cls}">${s||'—'}</span>`;
+}
+function priorityChip(p){
+  const cls = 'priority-' + (p||'low').toLowerCase();
+  return `<span class="chip ${cls}">${p||'—'}</span>`;
+}
+function activitiesFor(contactId){
+  return state.activities.filter(a => a.contactId === contactId)
+    .sort((a,b)=> (b.date||'').localeCompare(a.date||'') || (b.time||'').localeCompare(a.time||''));
+}
+
+/* ---------- Contact list ---------- */
+function renderContactList(){
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const statusF = document.getElementById('statusFilter').value;
+  let list = state.contacts.slice().sort((a,b)=> a.name.localeCompare(b.name));
+  if(q){
+    list = list.filter(c => (c.name||'').toLowerCase().includes(q) || (c.company||'').toLowerCase().includes(q));
+  }
+  if(statusF){
+    list = list.filter(c => c.status === statusF);
+  }
+  const container = document.getElementById('contactList');
+  if(list.length === 0){
+    container.innerHTML = `<div class="empty-list">No contacts match.</div>`;
+    return;
+  }
+  container.innerHTML = list.map(c => `
+    <div class="contact-card ${c.id===selectedContactId?'active':''}" onclick="selectContact(${c.id})">
+      <div class="row1">
+        <span class="name">${escapeHtml(c.name)}</span>
+        ${statusChip(c.status)}
+      </div>
+      <div class="company">${escapeHtml(c.company||'')}</div>
+    </div>
+  `).join('');
+}
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ---------- Selecting / editing a contact ---------- */
+function selectContact(id){
+  selectedContactId = id;
+  editingActivityId = null;
+  const c = state.contacts.find(x=>x.id===id);
+  if(!c) return;
+
+  document.getElementById('emptyState').classList.add('hidden');
+  document.getElementById('contactForm').classList.remove('hidden');
+  document.getElementById('deleteContactBtn').classList.remove('hidden');
+  document.getElementById('formTitle').textContent = c.name;
+  document.getElementById('formSubtitle').textContent = c.company ? c.company : '';
+
+  setVal('f_name', c.name); setVal('f_status', c.status); setVal('f_company', c.company);
+  setVal('f_jobTitle', c.jobTitle); setVal('f_email', c.email); setVal('f_phone', c.phone);
+  setVal('f_department', c.department); setVal('f_priority', c.priority); setVal('f_linkedin', c.linkedin);
+  setVal('f_website', c.website); setVal('f_street', c.street); setVal('f_city', c.city);
+  setVal('f_state', c.state); setVal('f_zip', c.zip); setVal('f_leadSource', c.leadSource);
+  setVal('f_pipelineStage', c.pipelineStage); setVal('f_dealValue', c.dealValue); setVal('f_dateAdded', c.dateAdded);
+  setVal('f_notes', c.notes);
+
+  hideActivityForm();
+  renderActivityList();
+  renderContactList();
+}
+function setVal(id, v){ document.getElementById(id).value = v ?? ''; }
+function getVal(id){ return document.getElementById(id).value; }
+
+function newContact(){
+  selectedContactId = null;
+  editingActivityId = null;
+  document.getElementById('emptyState').classList.add('hidden');
+  document.getElementById('contactForm').classList.remove('hidden');
+  document.getElementById('deleteContactBtn').classList.add('hidden');
+  document.getElementById('formTitle').textContent = 'New Contact';
+  document.getElementById('formSubtitle').textContent = '';
+  ['f_name','f_company','f_jobTitle','f_email','f_phone','f_department','f_linkedin','f_website',
+   'f_street','f_city','f_state','f_zip','f_dealValue','f_notes'].forEach(id=>setVal(id,''));
+  setVal('f_status','Active'); setVal('f_priority','Medium'); setVal('f_leadSource','Website');
+  setVal('f_pipelineStage','Prospecting'); setVal('f_dateAdded', new Date().toISOString().slice(0,10));
+  hideActivityForm();
+  renderActivityList();
+  renderContactList();
+}
+function cancelContactEdit(){
+  if(selectedContactId){ selectContact(selectedContactId); }
+  else{
+    document.getElementById('contactForm').classList.add('hidden');
+    document.getElementById('emptyState').classList.remove('hidden');
+    renderContactList();
+  }
+}
+function saveContact(){
+  const name = getVal('f_name').trim();
+  if(!name){ showToast('⚠️ Please add a Contact Name before saving'); return; }
+
+  const payload = {
+    name, status:getVal('f_status'), company:getVal('f_company').trim(), jobTitle:getVal('f_jobTitle').trim(),
+    email:getVal('f_email').trim(), phone:getVal('f_phone').trim(), department:getVal('f_department').trim(),
+    priority:getVal('f_priority'), linkedin:getVal('f_linkedin').trim(), website:getVal('f_website').trim(),
+    street:getVal('f_street').trim(), city:getVal('f_city').trim(), state:getVal('f_state').trim(),
+    zip:getVal('f_zip').trim(), leadSource:getVal('f_leadSource'), pipelineStage:getVal('f_pipelineStage'),
+    dealValue:Number(getVal('f_dealValue'))||0, dateAdded:getVal('f_dateAdded'), notes:getVal('f_notes').trim()
+  };
+
+  if(selectedContactId){
+    const c = state.contacts.find(x=>x.id===selectedContactId);
+    Object.assign(c, payload);
+  } else {
+    const id = state.nextContactId++;
+    state.contacts.push({id, ...payload});
+    selectedContactId = id;
+  }
+  saveState();
+  selectContact(selectedContactId);
+  showToast('✅ Contact saved');
+}
+function deleteContact(){
+  if(!selectedContactId) return;
+  if(!confirm('Are you sure you want to delete this Contact? Its activities will be deleted too.')) return;
+  state.contacts = state.contacts.filter(c=>c.id!==selectedContactId);
+  state.activities = state.activities.filter(a=>a.contactId!==selectedContactId); // cascade delete
+  saveState();
+  selectedContactId = null;
+  document.getElementById('contactForm').classList.add('hidden');
+  document.getElementById('emptyState').classList.remove('hidden');
+  renderContactList();
+  showToast('🗑️ Contact deleted');
+}
+
+/* ---------- Activities (nested under selected contact) ---------- */
+function renderActivityList(){
+  const container = document.getElementById('activityList');
+  if(!selectedContactId){ container.innerHTML = `<div class="act-empty">Save the contact first to add activities.</div>`; return; }
+  const items = activitiesFor(selectedContactId);
+  if(items.length===0){ container.innerHTML = `<div class="act-empty">No activities logged yet.</div>`; return; }
+  container.innerHTML = items.map(a => `
+    <div class="activity-row">
+      <div>${a.date||'—'}${a.time?(' '+a.time):''}</div>
+      <div><strong>${escapeHtml(a.name)}</strong></div>
+      <div>${a.type?`<span class="chip" style="background:var(--chip);color:var(--muted)">${escapeHtml(a.type)}</span>`:''}</div>
+      <div style="text-align:right">
+        <button class="ghost small" onclick="editActivity(${a.id})">Edit</button>
+      </div>
+      <div style="text-align:right">
+        <button class="danger small" onclick="deleteActivity(${a.id})">✕</button>
+      </div>
+      ${a.notes? `<div class="a-notes">${escapeHtml(a.notes)}</div>` : ''}
+    </div>
+  `).join('');
+}
+function showActivityForm(){
+  if(!selectedContactId){ showToast('⚠️ Save the contact first'); return; }
+  editingActivityId = 'new';
+  setVal('a_id',''); setVal('a_name',''); setVal('a_type',''); setVal('a_notes','');
+  setVal('a_date', new Date().toISOString().slice(0,10)); setVal('a_time','');
+  document.getElementById('activityForm').classList.remove('hidden');
+}
+function editActivity(id){
+  const a = state.activities.find(x=>x.id===id);
+  if(!a) return;
+  editingActivityId = id;
+  setVal('a_id', a.id); setVal('a_name', a.name); setVal('a_type', a.type);
+  setVal('a_date', a.date); setVal('a_time', a.time); setVal('a_notes', a.notes);
+  document.getElementById('activityForm').classList.remove('hidden');
+}
+function hideActivityForm(){
+  editingActivityId = null;
+  document.getElementById('activityForm').classList.add('hidden');
+}
+function saveActivity(){
+  const name = getVal('a_name').trim();
+  if(!name){ showToast('⚠️ Please add an Activity Name before saving'); return; }
+  const payload = { name, type:getVal('a_type').trim(), date:getVal('a_date'), time:getVal('a_time'), notes:getVal('a_notes').trim() };
+
+  if(editingActivityId && editingActivityId !== 'new'){
+    const a = state.activities.find(x=>x.id===editingActivityId);
+    Object.assign(a, payload);
+  } else {
+    const id = state.nextActivityId++;
+    state.activities.push({id, contactId:selectedContactId, ...payload});
+  }
+  saveState();
+  hideActivityForm();
+  renderActivityList();
+  showToast('✅ Activity saved');
+}
+function deleteActivity(id){
+  if(!confirm('Are you sure you want to delete this Activity?')) return;
+  state.activities = state.activities.filter(a=>a.id!==id);
+  saveState();
+  renderActivityList();
+  showToast('🗑️ Activity deleted');
+}
+
+/* ---------- Init ---------- */
+renderContactList();
+</script>
+</body>
+</html>
